@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FileCheck, Download, Search, LogOut, Filter, Calendar } from 'lucide-react';
+import { FileCheck, Download, Search, LogOut, Calendar } from 'lucide-react';
 
 interface Solicitud {
   id: string;
@@ -85,6 +85,7 @@ export default function RHDashboard({ usuario, onLogout }: RHDashboardProps) {
   const [busqueda, setBusqueda] = useState('');
   const [filtroEstatus, setFiltroEstatus] = useState<'todos' | 'autorizado' | 'recibido'>('todos');
   const [filtroDepartamento, setFiltroDepartamento] = useState('todos');
+  const [selectedSolicitudes, setSelectedSolicitudes] = useState<string[]>([]);
 
   const handleMarcarRecibido = (solicitudId: string) => {
     setSolicitudes(solicitudes.map(s =>
@@ -103,8 +104,28 @@ export default function RHDashboard({ usuario, onLogout }: RHDashboardProps) {
     alert(`Descargando PDF de la solicitud de ${solicitud.empleado.nombre}...`);
   };
 
+  const handleToggleSeleccion = (solicitudId: string) => {
+    setSelectedSolicitudes((prev) =>
+      prev.includes(solicitudId)
+        ? prev.filter((id) => id !== solicitudId)
+        : [...prev, solicitudId]
+    );
+  };
+
   const handleExportarPDF = () => {
-    alert('Exportando reporte a PDF...');
+    if (selectedSolicitudes.length === 0) {
+      alert('Selecciona al menos una solicitud para exportar a PDF.');
+      return;
+    }
+
+    const solicitudesSeleccionadas = solicitudes.filter((solicitud) =>
+      selectedSolicitudes.includes(solicitud.id)
+    );
+
+    alert(
+      `Exportando ${solicitudesSeleccionadas.length} solicitud(es) a PDF: \n` +
+      solicitudesSeleccionadas.map((solicitud) => `${solicitud.empleado.nombre} (${solicitud.id})`).join('\n')
+    );
   };
 
   const departamentos = ['todos', ...new Set(solicitudes.map(s => s.empleado.departamento))];
@@ -217,6 +238,11 @@ export default function RHDashboard({ usuario, onLogout }: RHDashboardProps) {
                   Exportar PDF
                 </button>
               </div>
+              <div className="mt-3 text-sm text-gray-600">
+                {selectedSolicitudes.length > 0
+                  ? `${selectedSolicitudes.length} solicitud(es) seleccionada(s)`
+                  : 'Selecciona las solicitudes que quieras exportar.'}
+              </div>
             </div>
 
             <div className="flex gap-2 mt-4">
@@ -244,6 +270,7 @@ export default function RHDashboard({ usuario, onLogout }: RHDashboardProps) {
                 <table className="w-full">
                   <thead className="bg-gray-50">
                     <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Seleccionar</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">No. Empleado</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Departamento</th>
@@ -257,6 +284,14 @@ export default function RHDashboard({ usuario, onLogout }: RHDashboardProps) {
                   <tbody className="divide-y divide-gray-200">
                     {solicitudesFiltradas.map((solicitud) => (
                       <tr key={solicitud.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-4">
+                          <input
+                            type="checkbox"
+                            checked={selectedSolicitudes.includes(solicitud.id)}
+                            onChange={() => handleToggleSeleccion(solicitud.id)}
+                            className="h-4 w-4 text-indigo-600 border-gray-300 rounded"
+                          />
+                        </td>
                         <td className="px-4 py-4 text-sm font-medium text-gray-900">
                           {solicitud.empleado.numEmpleado}
                         </td>

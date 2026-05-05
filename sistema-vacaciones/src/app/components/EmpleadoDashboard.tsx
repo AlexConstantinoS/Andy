@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Calendar, LogOut, Plus, X, User } from 'lucide-react';
+import { Calendar, LogOut, Plus, X } from 'lucide-react';
 
 interface EmpleadoDashboardProps {
   usuario: any;
@@ -14,6 +14,16 @@ export default function EmpleadoDashboard({ usuario, onLogout }: EmpleadoDashboa
   const [fechaInicio, setFechaInicio] = useState('');
   const [fechaFin, setFechaFin] = useState('');
   const [diasDisponibles, setDiasDisponibles] = useState('');
+
+  const departamentos = [
+    'Ventas',
+    'Administración',
+    'Marketing',
+    'Recursos Humanos',
+    'Finanzas',
+    'Operaciones',
+    'TI',
+  ];
 
   const calcularDias = (inicio: string, fin: string) => {
     if (!inicio || !fin) return 0;
@@ -60,6 +70,7 @@ export default function EmpleadoDashboard({ usuario, onLogout }: EmpleadoDashboa
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Portal del Empleado</h1>
               <p className="text-sm text-gray-600">Solicitud de Vacaciones</p>
+              <p className="text-sm text-gray-500">Bienvenido, {usuario?.nombre || 'Empleado'}</p>
             </div>
             <button
               onClick={onLogout}
@@ -164,14 +175,21 @@ export default function EmpleadoDashboard({ usuario, onLogout }: EmpleadoDashboa
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Departamento *
                 </label>
-                <input
-                  type="text"
+                <select
                   value={departamento}
                   onChange={(e) => setDepartamento(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  placeholder="Ej: Ventas, Administración, etc."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
                   required
-                />
+                >
+                  <option value="" disabled>
+                    Selecciona un departamento
+                  </option>
+                  {departamentos.map((dept) => (
+                    <option key={dept} value={dept}>
+                      {dept}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>
