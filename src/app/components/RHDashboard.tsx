@@ -7,6 +7,13 @@ import {
   Search,
   LogOut,
   Calendar,
+  Building2,
+  Hash,
+  User,
+  Filter,
+  RefreshCw,
+  FileText,
+  CheckCircle,
 } from 'lucide-react';
 
 interface Solicitud {
@@ -37,6 +44,7 @@ export default function RHDashboard({ usuario, onLogout }: RHDashboardProps) {
   const [busqueda, setBusqueda] = useState('');
   const [filtroDepartamento, setFiltroDepartamento] = useState('todos');
   const [selectedSolicitudes, setSelectedSolicitudes] = useState<number[]>([]);
+  const [cargando, setCargando] = useState(false);
 
   const departamentos = [
     'todos',
@@ -83,6 +91,8 @@ export default function RHDashboard({ usuario, onLogout }: RHDashboardProps) {
 
   const obtenerSolicitudes = async () => {
     try {
+      setCargando(true);
+
       const token = localStorage.getItem('token');
 
       const response = await axios.get(
@@ -98,6 +108,8 @@ export default function RHDashboard({ usuario, onLogout }: RHDashboardProps) {
     } catch (error) {
       console.log(error);
       alert('Error al obtener solicitudes de Recursos Humanos');
+    } finally {
+      setCargando(false);
     }
   };
 
@@ -122,6 +134,11 @@ export default function RHDashboard({ usuario, onLogout }: RHDashboardProps) {
 
   const parseFechaLocal = (fecha: string) => {
     const limpia = fecha.trim().split('T')[0];
+
+    if (!limpia.includes('-')) {
+      return new Date(fecha);
+    }
+
     const [year, month, day] = limpia.split('-').map(Number);
     return new Date(year, month - 1, day);
   };
@@ -240,7 +257,6 @@ export default function RHDashboard({ usuario, onLogout }: RHDashboardProps) {
     doc.setFillColor(0, 0, 0);
     doc.setLineWidth(0.5);
 
-    // Icono ubicación
     doc.circle(iconX, y1 - 2, 1.8, 'S');
     doc.circle(iconX, y1 - 2, 0.6, 'F');
     doc.triangle(
@@ -253,7 +269,6 @@ export default function RHDashboard({ usuario, onLogout }: RHDashboardProps) {
       'F'
     );
 
-    // Icono teléfono
     doc.setLineWidth(0.7);
     doc.line(iconX - 2, y2 - 2.5, iconX - 1, y2 - 1.5);
     doc.line(iconX - 1, y2 - 1.5, iconX - 1.5, y2 - 0.6);
@@ -261,7 +276,6 @@ export default function RHDashboard({ usuario, onLogout }: RHDashboardProps) {
     doc.line(iconX + 0.3, y2 + 1.2, iconX + 1.2, y2 + 0.7);
     doc.line(iconX + 1.2, y2 + 0.7, iconX + 2.2, y2 + 1.7);
 
-    // Icono correo
     doc.setLineWidth(0.5);
     doc.rect(iconX - 2.8, y3 - 3.2, 5.6, 4, 'S');
     doc.line(iconX - 2.8, y3 - 3.2, iconX, y3 - 1);
@@ -493,6 +507,9 @@ export default function RHDashboard({ usuario, onLogout }: RHDashboardProps) {
         .includes(textoBusqueda) ||
       solicitud.nombre_departamento
         ?.toLowerCase()
+        .includes(textoBusqueda) ||
+      solicitud.jefe_autoriza
+        ?.toLowerCase()
         .includes(textoBusqueda);
 
     const coincideDepartamento =
@@ -511,207 +528,369 @@ export default function RHDashboard({ usuario, onLogout }: RHDashboardProps) {
     solicitudes.map((s) => s.nombre_departamento)
   ).size;
 
+  const totalRestantes = solicitudes.reduce(
+    (sum, s) =>
+      sum +
+      (Number(s.dias_pendientes || 0) - Number(s.dias_solicitados || 0)),
+    0
+  );
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow">
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-white to-teal-50">
+      <header className="bg-white/90 backdrop-blur border-b border-gray-200 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Portal de Recursos Humanos
-              </h1>
-              <p className="text-sm text-gray-600">
-                {usuario?.nombre} - Solicitudes aceptadas por jefes
-              </p>
+          <div className="flex justify-between items-center gap-4">
+            <div className="flex items-center gap-4">
+              <div className="hidden sm:flex items-center gap-3">
+                <img
+                  src="/img/escudo-nava.png"
+                  alt="Escudo Nava"
+                  className="w-12 h-12 object-contain"
+                />
+                <img
+                  src="/img/logo-nava.png"
+                  alt="Logo Nava"
+                  className="w-20 h-12 object-contain"
+                />
+              </div>
+
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
+                  Portal de Recursos Humanos
+                </h1>
+                <p className="text-sm text-gray-600">
+                  Solicitudes aceptadas por jefes
+                </p>
+                <p className="text-xs text-gray-500">
+                  {usuario?.nombre || 'Recursos Humanos'}
+                </p>
+              </div>
             </div>
 
-            <button
-              onClick={onLogout}
-              className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <LogOut className="w-4 h-4" />
-              Salir
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={obtenerSolicitudes}
+                disabled={cargando}
+                className="hidden sm:flex items-center gap-2 px-4 py-2 text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-100 rounded-xl transition-colors disabled:opacity-60"
+              >
+                <RefreshCw className={`w-4 h-4 ${cargando ? 'animate-spin' : ''}`} />
+                Actualizar
+              </button>
+
+              <button
+                onClick={onLogout}
+                className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 border border-gray-200 rounded-xl transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                Salir
+              </button>
+            </div>
           </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-lg shadow">
+        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-teal-700 via-emerald-700 to-teal-900 text-white shadow-2xl mb-8">
+          <div className="absolute top-0 right-0 w-56 h-56 bg-white/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
+
+          <div className="relative p-8 sm:p-10 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+            <div>
+              <div className="flex sm:hidden items-center gap-3 mb-6">
+                <img
+                  src="/img/escudo-nava.png"
+                  alt="Escudo Nava"
+                  className="w-16 h-16 object-contain bg-white rounded-2xl p-2"
+                />
+                <img
+                  src="/img/logo-nava.png"
+                  alt="Logo Nava"
+                  className="w-24 h-16 object-contain bg-white rounded-2xl p-2"
+                />
+              </div>
+
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/15 border border-white/20 rounded-full text-sm mb-5">
+                <FileCheck className="w-4 h-4" />
+                Control de solicitudes autorizadas
+              </div>
+
+              <h2 className="text-3xl sm:text-4xl font-extrabold leading-tight mb-4">
+                Consulta y descarga solicitudes aprobadas por jefes
+              </h2>
+
+              <p className="text-white/90 text-base sm:text-lg max-w-xl">
+                Recursos Humanos puede visualizar todas las solicitudes aceptadas
+                por los jefes de departamento y generar el formato PDF oficial.
+              </p>
+            </div>
+
+            <div className="bg-white/12 border border-white/20 rounded-3xl p-6 backdrop-blur">
+              <h3 className="font-bold text-lg mb-4">
+                Resumen general
+              </h3>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="rounded-2xl bg-white/15 p-4">
+                  <p className="text-sm text-white/80">Solicitudes</p>
+                  <p className="text-3xl font-extrabold">{solicitudes.length}</p>
+                </div>
+
+                <div className="rounded-2xl bg-white/15 p-4">
+                  <p className="text-sm text-white/80">Días solicitados</p>
+                  <p className="text-3xl font-extrabold">{totalDias}</p>
+                </div>
+
+                <div className="rounded-2xl bg-white/15 p-4">
+                  <p className="text-sm text-white/80">Departamentos</p>
+                  <p className="text-3xl font-extrabold">{departamentosConSolicitudes}</p>
+                </div>
+
+                <div className="rounded-2xl bg-white/15 p-4">
+                  <p className="text-sm text-white/80">Seleccionadas</p>
+                  <p className="text-3xl font-extrabold">{selectedSolicitudes.length}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-green-100 rounded-lg">
+              <div className="p-3 bg-green-100 rounded-2xl">
                 <FileCheck className="w-6 h-6 text-green-600" />
               </div>
+
               <div>
-                <p className="text-sm text-gray-600">Aceptadas por Jefe</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-sm text-gray-600">Aceptadas</p>
+                <p className="text-2xl font-extrabold text-gray-900">
                   {solicitudes.length}
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow">
+          <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-blue-100 rounded-lg">
+              <div className="p-3 bg-blue-100 rounded-2xl">
                 <Calendar className="w-6 h-6 text-blue-600" />
               </div>
+
               <div>
                 <p className="text-sm text-gray-600">Días Totales</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-2xl font-extrabold text-gray-900">
                   {totalDias}
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow">
+          <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-indigo-100 rounded-lg">
-                <Download className="w-6 h-6 text-indigo-600" />
+              <div className="p-3 bg-emerald-100 rounded-2xl">
+                <CheckCircle className="w-6 h-6 text-emerald-600" />
               </div>
+
+              <div>
+                <p className="text-sm text-gray-600">Días Restantes</p>
+                <p className="text-2xl font-extrabold text-gray-900">
+                  {totalRestantes}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-indigo-100 rounded-2xl">
+                <Building2 className="w-6 h-6 text-indigo-600" />
+              </div>
+
               <div>
                 <p className="text-sm text-gray-600">Departamentos</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-2xl font-extrabold text-gray-900">
                   {departamentosConSolicitudes}
                 </p>
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
-        <div className="bg-white rounded-lg shadow mb-6">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">
-                Solicitudes Aceptadas por Jefes
-              </h2>
+        <section className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+          <div className="p-6 border-b border-gray-100">
+            <div className="flex flex-col lg:flex-row gap-4 lg:items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">
+                  Solicitudes aceptadas por jefes
+                </h2>
+                <p className="text-sm text-gray-500">
+                  Filtra, revisa y descarga el formato oficial de vacaciones.
+                </p>
+              </div>
 
               <button
                 onClick={handleExportarPDF}
-                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
+                className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors font-bold shadow-md"
               >
-                <Download className="w-4 h-4" />
-                Exportar Seleccionadas
+                <Download className="w-5 h-5" />
+                Exportar seleccionadas
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-5">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
                   value={busqueda}
                   onChange={(e) => setBusqueda(e.target.value)}
-                  placeholder="Buscar por nombre, número o departamento..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  placeholder="Buscar por nombre, número, jefe o departamento..."
+                  className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-600 focus:border-transparent outline-none"
                 />
               </div>
 
-              <select
-                value={filtroDepartamento}
-                onChange={(e) => setFiltroDepartamento(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-              >
-                {departamentos.map((departamento) => (
-                  <option key={departamento} value={departamento}>
-                    {departamento === 'todos'
-                      ? 'Todos los departamentos'
-                      : departamento}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <select
+                  value={filtroDepartamento}
+                  onChange={(e) => setFiltroDepartamento(e.target.value)}
+                  className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-600 focus:border-transparent outline-none bg-white"
+                >
+                  {departamentos.map((departamento) => (
+                    <option key={departamento} value={departamento}>
+                      {departamento === 'todos'
+                        ? 'Todos los departamentos'
+                        : departamento}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            <div className="mt-3 text-sm text-gray-600">
+            <div className="mt-4 text-sm text-gray-600">
               {selectedSolicitudes.length > 0
                 ? `${selectedSolicitudes.length} solicitud(es) seleccionada(s)`
-                : 'Selecciona solicitudes para exportar a PDF.'}
+                : 'Selecciona solicitudes para exportarlas en un solo PDF.'}
             </div>
           </div>
 
           <div className="p-6">
-            {solicitudesFiltradas.length === 0 ? (
-              <p className="text-center text-gray-500 py-8">
-                No se encontraron solicitudes
-              </p>
+            {cargando ? (
+              <div className="flex flex-col items-center justify-center py-16 text-gray-500">
+                <RefreshCw className="w-8 h-8 animate-spin mb-3 text-teal-700" />
+                <p>Cargando solicitudes...</p>
+              </div>
+            ) : solicitudesFiltradas.length === 0 ? (
+              <div className="text-center py-16">
+                <div className="w-16 h-16 mx-auto bg-gray-100 rounded-2xl flex items-center justify-center mb-4">
+                  <FileText className="w-8 h-8 text-gray-400" />
+                </div>
+                <p className="text-gray-700 font-semibold">
+                  No se encontraron solicitudes
+                </p>
+                <p className="text-sm text-gray-500">
+                  Intenta cambiar el filtro o la búsqueda.
+                </p>
+              </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
+              <div className="overflow-x-auto rounded-2xl border border-gray-100">
+                <table className="w-full min-w-[1050px]">
+                  <thead className="bg-slate-50">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      <th className="px-4 py-4 text-left text-xs font-bold text-gray-500 uppercase">
                         Seleccionar
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        No. Empleado
+                      <th className="px-4 py-4 text-left text-xs font-bold text-gray-500 uppercase">
+                        Empleado
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Nombre
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      <th className="px-4 py-4 text-left text-xs font-bold text-gray-500 uppercase">
                         Departamento
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      <th className="px-4 py-4 text-left text-xs font-bold text-gray-500 uppercase">
                         Jefe autoriza
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      <th className="px-4 py-4 text-left text-xs font-bold text-gray-500 uppercase">
                         Fechas
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      <th className="px-4 py-4 text-left text-xs font-bold text-gray-500 uppercase">
                         Días
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      <th className="px-4 py-4 text-left text-xs font-bold text-gray-500 uppercase">
+                        Restantes
+                      </th>
+                      <th className="px-4 py-4 text-left text-xs font-bold text-gray-500 uppercase">
                         PDF
                       </th>
                     </tr>
                   </thead>
 
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody className="divide-y divide-gray-100 bg-white">
                     {solicitudesFiltradas.map((solicitud) => (
-                      <tr key={solicitud.id} className="hover:bg-gray-50">
+                      <tr key={solicitud.id} className="hover:bg-teal-50/40 transition-colors">
                         <td className="px-4 py-4">
                           <input
                             type="checkbox"
                             checked={selectedSolicitudes.includes(solicitud.id)}
                             onChange={() => handleToggleSeleccion(solicitud.id)}
-                            className="h-4 w-4 text-indigo-600 border-gray-300 rounded"
+                            className="h-4 w-4 text-teal-700 border-gray-300 rounded"
                           />
                         </td>
 
-                        <td className="px-4 py-4 text-sm font-medium text-gray-900">
-                          {solicitud.numero_empleado_solicitante || 'Sin número'}
+                        <td className="px-4 py-4">
+                          <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 bg-teal-50 rounded-xl flex items-center justify-center">
+                              <User className="w-5 h-5 text-teal-700" />
+                            </div>
+
+                            <div>
+                              <p className="text-sm font-bold text-gray-900">
+                                {solicitud.nombre_completo_solicitante || 'Sin nombre'}
+                              </p>
+                              <p className="inline-flex items-center gap-1 text-xs text-gray-500 mt-1">
+                                <Hash className="w-3 h-3" />
+                                {solicitud.numero_empleado_solicitante || 'Sin número'}
+                              </p>
+                            </div>
+                          </div>
                         </td>
 
-                        <td className="px-4 py-4 text-sm text-gray-900">
-                          {solicitud.nombre_completo_solicitante || 'Sin nombre'}
+                        <td className="px-4 py-4">
+                          <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-700 border border-blue-100 rounded-full text-xs font-semibold">
+                            <Building2 className="w-3 h-3" />
+                            {solicitud.nombre_departamento ||
+                              `Departamento #${solicitud.departamento_id}`}
+                          </span>
                         </td>
 
-                        <td className="px-4 py-4 text-sm text-gray-600">
-                          {solicitud.nombre_departamento ||
-                            `Departamento #${solicitud.departamento_id}`}
-                        </td>
-
-                        <td className="px-4 py-4 text-sm text-gray-600">
+                        <td className="px-4 py-4 text-sm text-gray-700">
                           {solicitud.jefe_autoriza || 'Sin jefe registrado'}
                         </td>
 
-                        <td className="px-4 py-4 text-sm text-gray-600">
+                        <td className="px-4 py-4 text-sm text-gray-600 max-w-[230px]">
                           {solicitud.fechas_vacaciones}
                         </td>
 
-                        <td className="px-4 py-4 text-sm text-gray-900 font-medium">
-                          {solicitud.dias_solicitados}
+                        <td className="px-4 py-4">
+                          <span className="inline-flex items-center px-3 py-1 bg-green-50 text-green-700 border border-green-100 rounded-full text-xs font-bold">
+                            {solicitud.dias_solicitados} día(s)
+                          </span>
+                        </td>
+
+                        <td className="px-4 py-4">
+                          <span className="inline-flex items-center px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-full text-xs font-bold">
+                            {Number(solicitud.dias_pendientes || 0) -
+                              Number(solicitud.dias_solicitados || 0)}
+                          </span>
                         </td>
 
                         <td className="px-4 py-4">
                           <button
                             onClick={() => handleDescargarPDF(solicitud)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                            className="inline-flex items-center gap-2 px-3 py-2 text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-100 rounded-xl transition-colors text-sm font-semibold"
                             title="Descargar PDF"
                           >
                             <Download className="w-4 h-4" />
+                            Descargar
                           </button>
                         </td>
                       </tr>
@@ -721,7 +900,7 @@ export default function RHDashboard({ usuario, onLogout }: RHDashboardProps) {
               </div>
             )}
           </div>
-        </div>
+        </section>
       </main>
     </div>
   );
