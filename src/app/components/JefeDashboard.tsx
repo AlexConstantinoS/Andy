@@ -243,7 +243,7 @@ export default function JefeDashboard({
 
               <div>
                 <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-                  Portal del Jefe
+                  Portal del Director de Departamento
                 </h1>
                 <p className="text-sm text-gray-600">
                   Gestión de solicitudes de vacaciones

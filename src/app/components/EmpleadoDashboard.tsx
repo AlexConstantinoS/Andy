@@ -237,7 +237,6 @@ export default function EmpleadoDashboard({ usuario, onLogout }: EmpleadoDashboa
       await axios.post(
         'http://localhost:3000/api/solicitudes',
         {
-          empleado_id: empleadoId,
           numero_empleado_solicitante: numEmpleado.trim(),
           nombre_completo_solicitante: nombreCompleto.trim(),
           departamento_id: departamentoId,

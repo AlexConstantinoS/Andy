@@ -245,7 +245,7 @@ export default function RHDashboard({ usuario, onLogout }: RHDashboardProps) {
       align: 'center',
     });
 
-    doc.text('862 624 5251 (Ext. 130)', textX, y2, {
+    doc.text('862 624 5251', textX, y2, {
       align: 'center',
     });
 
@@ -340,13 +340,13 @@ export default function RHDashboard({ usuario, onLogout }: RHDashboardProps) {
     doc.setFontSize(10);
 
     doc.text(
-      'TSU YASMIN HUERTA ENRIQUEZ RH O ING. IVAN OCHOA RODRIGUEZ',
+      'TSU YASMIN HUERTA ENRIQUEZ',
       25,
       82
     );
 
     doc.text(
-      'DIRECTORA DE RECURSOS HUMANOS O PRESIDENTE MUNICIPAL',
+      'DIRECTORA DE RECURSOS HUMANOS',
       25,
       88
     );
@@ -359,7 +359,7 @@ export default function RHDashboard({ usuario, onLogout }: RHDashboardProps) {
 
     const textoPrincipal =
       `Por medio del presente, me dirijo a usted con el fin de dar a conocer que ` +
-      `C. ${nombreEmpleado}, con el NUMERO DE EMPLEADO ${numeroEmpleado} solicita ` +
+      `C. ${nombreEmpleado}, con el numero de empleado ${numeroEmpleado} solicita ` +
       `la autorización de ${diasSolicitados} día(s) de vacaciones, los cuales de ser autorizados ` +
       `serían del día ${fechasFormateadas} para presentarme a laborar el ${fechaPresentacion}.`;
 
