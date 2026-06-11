@@ -235,7 +235,7 @@ export default function EmpleadoDashboard({ usuario, onLogout }: EmpleadoDashboa
       }
 
       await axios.post(
-        'http://localhost:3000/api/solicitudes',
+        `${import.meta.env.VITE_API_URL}/api/solicitudes`,
         {
           numero_empleado_solicitante: numEmpleado.trim(),
           nombre_completo_solicitante: nombreCompleto.trim(),

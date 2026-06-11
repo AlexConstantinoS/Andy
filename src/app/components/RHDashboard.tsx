@@ -96,7 +96,7 @@ export default function RHDashboard({ usuario, onLogout }: RHDashboardProps) {
       const token = localStorage.getItem('token');
 
       const response = await axios.get(
-        'http://localhost:3000/api/solicitudes/rh',
+        `${import.meta.env.VITE_API_URL}/api/solicitudes/rh`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

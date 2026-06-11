@@ -25,7 +25,7 @@ export default function Login({ onLogin }: LoginProps) {
     try {
       setLoading(true);
 
-      const response = await axios.post('http://localhost:3000/api/login', {
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/login`, {
         correo,
         password,
       });
@@ -35,10 +35,17 @@ export default function Login({ onLogin }: LoginProps) {
       localStorage.setItem('token', data.token);
       onLogin(data.usuario.rol, data.usuario);
     } catch (err: any) {
-      console.log(err);
+      console.log('ERROR COMPLETO:', err);
+      console.log('API URL:', import.meta.env.VITE_API_URL);
+      console.log('STATUS:', err.response?.status);
+      console.log('DATA:', err.response?.data);
 
       if (err.response?.data?.message) {
         setError(err.response.data.message);
+      } else if (err.response?.data?.mensaje) {
+        setError(err.response.data.mensaje);
+      } else if (err.code === 'ERR_NETWORK') {
+        setError('No se pudo conectar con el servidor. Revisa backend o CORS.');
       } else {
         setError('Error al iniciar sesión');
       }

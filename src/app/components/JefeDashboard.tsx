@@ -44,7 +44,7 @@ export default function JefeDashboard({
       const token = localStorage.getItem('token');
 
       const response = await axios.get(
-        'http://localhost:3000/api/solicitudes/jefe',
+        `${import.meta.env.VITE_API_URL}/api/solicitudes/jefe`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -71,7 +71,7 @@ export default function JefeDashboard({
       const token = localStorage.getItem('token');
 
       await axios.put(
-        `http://localhost:3000/api/solicitudes/${solicitudId}`,
+        `${import.meta.env.VITE_API_URL}/api/solicitudes/${solicitudId}`,
         {
           estado: 'aceptada_jefe',
           respuesta_jefe: 'Solicitud autorizada por jefe',
@@ -98,7 +98,7 @@ export default function JefeDashboard({
       const token = localStorage.getItem('token');
 
       await axios.put(
-        `http://localhost:3000/api/solicitudes/${solicitudId}`,
+        `${import.meta.env.VITE_API_URL}/api/solicitudes/${solicitudId}`,
         {
           estado: 'rechazada',
           respuesta_jefe: 'Solicitud rechazada',
