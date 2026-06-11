@@ -8,16 +8,27 @@ const authRoutes = require('./routes/authRoutes');
 
 const app = express();
 
-app.use(cors());
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://sistema-vacaciones.vercel.app'
+];
+
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
+
 app.use(express.json());
 
 app.use('/api', authRoutes);
 app.use('/api/solicitudes', solicitudesRoutes);
 
 app.get('/', (req, res) => {
-    res.send('API funcionando');
+  res.send('API funcionando');
 });
 
-app.listen(3000, () => {
-    console.log('Servidor en puerto 3000');
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`Servidor en puerto ${PORT}`);
 });
