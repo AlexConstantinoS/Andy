@@ -10,7 +10,7 @@ const app = express();
 
 const allowedOrigins = [
   'http://localhost:5173',
-  'https://sistema-vacaciones.vercel.app'
+  'https://andy-sepia.vercel.app'
 ];
 
 app.use(cors({
